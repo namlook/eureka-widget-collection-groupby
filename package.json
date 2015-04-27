@@ -1,7 +1,7 @@
 {
   "name": "eureka-widget-collection-groupby",
   "version": "0.0.0",
-  "description": "The default blueprint for ember-cli addons.",
+  "description": "Group an Eureka collection by a property.",
   "directories": {
     "doc": "doc",
     "test": "tests"
@@ -33,10 +33,13 @@
     "ember-disable-prototype-extensions": "^1.0.0"
   },
   "keywords": [
-    "ember-addon"
+    "ember-addon",
+    "eureka-widget",
+    "aggregation"
   ],
   "dependencies": {
-    "ember-cli-babel": "^4.0.0"
+    "ember-cli-babel": "^4.0.0",
+    "ember-cli-htmlbars": "^0.7.6"
   },
   "ember-addon": {
     "configPath": "tests/dummy/config"

@@ -1,0 +1,30 @@
+<div class="panel panel-default">
+    {{#if label}}
+        <div class="panel-heading">{{{label}}}</div>
+    {{/if}}
+
+    {{#if isLoading}}
+        {{partial 'eureka-loading'}}
+    {{else}}
+        {{#if chartRepresentation}}
+
+            <div class="panel-body">
+                {{high-charts mode=_chartMode content=_chartData chartOptions=_chartOptions}}
+            </div>
+
+        {{else}}
+
+            <ul class="list-group">
+            {{#each group in data}}
+               <li class="list-group-item">
+                    <span class="badge">{{group.count}}</span>
+                    {{group.facet}}
+                </li>
+            {{/each}}
+            </ul>
+
+        {{/if}}
+
+    {{/if}}
+
+</div>
