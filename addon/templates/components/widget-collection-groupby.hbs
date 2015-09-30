@@ -15,7 +15,7 @@
         {{else}}
 
             <ul class="list-group">
-            {{#each group in data}}
+            {{#each data as |group|}}
                <li class="list-group-item">
                     <span class="badge">{{group.count}}</span>
                     {{group.facet}}
