@@ -31,11 +31,11 @@ export default CollectionWidget.extend({
     /** hightchart configuration **/
     _chartMode: false,
 
-    _chartCategories: function() {
-        return this.get('data').mapBy('facet');
-    }.property('data.@each.facet'),
+    _chartCategories: Ember.computed('data.@each.label', function() {
+        return this.get('data').mapBy('label');
+    }),
 
-    _chartOptions: function() {
+    _chartOptions: Ember.computed('chartType', '_chartCategories.[]', 'chartTitle', 'chartSubtitle', 'valueLegend', function() {
         var chartType = this.get('chartType');
         var chartCategories = this.get('_chartCategories');
         var chartTitle = this.get('chartTitle') || '';
@@ -84,14 +84,14 @@ export default CollectionWidget.extend({
                 }
             }
         };
-    }.property('chartType', '_chartCategories.[]', 'chartTitle', 'chartSubtitle', 'valueLegend'),
+    }),
 
-    _chartData: function() {
+    _chartData: Ember.computed('data.@each.value', 'serieName', function() {
         var serieName = this.get('serieName');
         var data = this.get('data').map(function(item) {
             return {
-                name: item.facet,
-                y: item.count,
+                name: item.label,
+                y: item.value,
                 selected: item.selected
             };
         });
@@ -99,13 +99,30 @@ export default CollectionWidget.extend({
             name: serieName,
             data: data
         }];
-    }.property('data.@each.count', 'serieName'),
+    }),
 
 
     /** update the collection from the `routeModel.query` */
-    fetch: function() {
+    fetch: Ember.on('init', Ember.observer(
+      'routeModel.query.hasChanged',
+      'routeModel.meta',
+      'store',
+      'property',
+      'considerUnfilled', function() {
+
         this.set('isLoading', true);
         var routeQuery = this.get('routeModel.query')._toObject();
+
+        let query = {};
+        for (let fieldName of Object.keys(routeQuery)) {
+            if (fieldName[0] === '_') {
+                query[fieldName.slice(1)] = routeQuery[fieldName];
+            } else {
+                query.filter = query.filter || {};
+                query.filter[fieldName] = routeQuery[fieldName];
+            }
+        }
+
         var property = this.get('property');
         var considerUnfilled = this.get('considerUnfilled');
 
@@ -118,11 +135,11 @@ export default CollectionWidget.extend({
         }
 
         var promises = Ember.A();
-        promises.pushObject(this.get('store').groupBy(property, routeQuery));
+        promises.pushObject(this.get('store').groupBy(property, query));
 
         if (considerUnfilled) {
             let unfilledQuery = {};
-            Ember.setProperties(unfilledQuery, routeQuery);
+            Ember.setProperties(unfilledQuery, query);
             unfilledQuery[property] = {'$exists': false};
             promises.pushObject(this.get('store').count(unfilledQuery));
         }
@@ -131,18 +148,12 @@ export default CollectionWidget.extend({
         Ember.RSVP.all(promises).then(function(data) {
             var results = data[0];
             if (considerUnfilled) {
-                results.push({facet: '_unfilled', count: data[1].total, selected: true});
+                results.push({label: '_unfilled', value: data[1], selected: true});
             }
 
             that.set('data', results.toArray());
             that.set('isLoading', false);
         });
-    }.observes(
-        'routeModel.query.hasChanged',
-        'routeModel.meta',
-        'store',
-        'property',
-        'considerUnfilled'
-    ).on('init')
+    }))
 
 });

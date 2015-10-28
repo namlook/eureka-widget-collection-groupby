@@ -2,5 +2,9 @@
 'use strict';
 
 module.exports = {
-  name: 'eureka-widget-collection-groupby'
+    name: 'eureka-widget-collection-groupby',
+
+    isDevelopingAddon: function() {
+      return true;
+    }
 };
