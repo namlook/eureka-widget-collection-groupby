@@ -1,6 +1,6 @@
 {
   "name": "eureka-widget-collection-groupby",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "description": "Group an Eureka collection by a property.",
   "directories": {
     "doc": "doc",
