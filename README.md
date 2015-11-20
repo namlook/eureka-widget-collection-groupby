@@ -12,8 +12,20 @@ Usage:
         // group by this property
         property: <property>,
 
+        // aggregate with this operator
+        // could be on of: 'avg', 'sum', 'max', 'min', 'count'
+        operator: 'count',
+
+        // the property to perform the aggregation
+        // if not set, the target is the property
+        target: null,
+
         // the label of the widget
         label: null,
+
+        // if the aggregation produce only one value,
+        // choose to emphasis this value
+        singleValue: false
 
         // if `considerUnfilled` is true, then the number of item
         // which have their property unfilled will be displayed
@@ -28,7 +40,7 @@ Usage:
             subtitle: '' // the subtitle of the chart (optional)
             serieName: null, // the name of the serie (optional)
             valueLegend: 'number of matches', // what does represent the values ?
-
+            valueSuffix: ' matches' // the value suffix to display
         }
     }
 

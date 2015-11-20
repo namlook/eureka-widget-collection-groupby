@@ -11,7 +11,7 @@
     "start": "ember server",
     "test": "ember try:testall"
   },
-  "repository": "",
+  "repository": "https://github.com/namlook/eureka-widget-collection-groupby",
   "engines": {
     "node": ">= 0.10.0"
   },
@@ -39,6 +39,7 @@
   },
   "keywords": [
     "eureka-widget",
+    "charts",
     "aggregation",
     "ember-addon"
   ],

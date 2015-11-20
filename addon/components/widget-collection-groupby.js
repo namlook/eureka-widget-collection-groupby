@@ -7,19 +7,31 @@ export default CollectionWidget.extend({
 
     label: Ember.computed.alias('config.label'),
     property: Ember.computed.alias('config.property'),
+
+    target: Ember.computed('config.target', function() {
+        return this.get('config.target') || this.get('property');
+    }),
+
+    operator: Ember.computed('config.operator', function() {
+        return this.get('config.operator') || 'count';
+    }),
+
     considerUnfilled: Ember.computed.alias('config.considerUnfilled'),
     chartType: Ember.computed.alias('config.chart.type'),
     chartTitle: Ember.computed.alias('config.chart.title'),
     chartSubtitle: Ember.computed.alias('config.chart.subtitle'),
     chartRepresentation: Ember.computed.bool('config.chart.type'),
 
+    singleValueRepresentation: Ember.computed.alias('config.singleValue'),
+
     valueLegend: Ember.computed.alias('config.chart.valueLegend'),
+    valueSuffix: Ember.computed.alias('config.chart.valueSuffix'),
 
     serieName: Ember.computed('config.chart.serieName', 'property', 'routeModel.meta', function() {
         var serieName = this.get('config.chart.serieName');
         if (!serieName) {
             var property = this.get('property');
-            serieName = this.get('routeModel.meta.'+property+'Field.label');
+            serieName = this.get(`routeModel.meta.${property}Field.label`);
         }
         return serieName;
     }),
@@ -35,13 +47,22 @@ export default CollectionWidget.extend({
         return this.get('data').mapBy('label');
     }),
 
-    _chartOptions: Ember.computed('chartType', '_chartCategories.[]', 'chartTitle', 'chartSubtitle', 'valueLegend', function() {
-        var chartType = this.get('chartType');
-        var chartCategories = this.get('_chartCategories');
-        var chartTitle = this.get('chartTitle') || '';
-        var chartSubtitle = this.get('chartSubtitle') || '';
+    _chartOptions: Ember.computed(
+      'chartType',
+      '_chartCategories.[]',
+      'chartTitle',
+      'chartSubtitle',
+      'valueLegend',
+      'valueSuffix',
+      'operator', function() {
+        let chartType = this.get('chartType');
+        let chartCategories = this.get('_chartCategories');
+        let chartTitle = this.get('chartTitle') || '';
+        let chartSubtitle = this.get('chartSubtitle') || '';
 
-        var valueLegend = this.get('valueLegend') || 'number of matches';
+        let valueLegend = this.get('valueLegend') || 'number of matches';
+        let valueSuffix = this.get('valueSuffix') || ' matches';
+        let operator = this.get('operator');
 
         return {
             chart: {
@@ -57,12 +78,16 @@ export default CollectionWidget.extend({
               categories: chartCategories
             },
             tooltip: {
-                valueSuffix: ' matches'
+                valueSuffix: valueSuffix
             },
             legend: {
                 labelFormatter: function() {
                     if (chartType === 'pie') {
-                        return this.name + " (" + this.percentage.toFixed(1) + "%)";
+                        if (operator === 'count') {
+                            return `${this.name} (${this.percentage.toFixed(1)}%)`;
+                        } else {
+                            return `${this.name} (${this.value}${valueSuffix})`;
+                        }
                     }
                     return this.name;
                 }
@@ -108,10 +133,13 @@ export default CollectionWidget.extend({
       'routeModel.meta',
       'store',
       'property',
+      'operator',
+      'target',
+      'singleValueRepresentation',
       'considerUnfilled', function() {
 
         this.set('isLoading', true);
-        var routeQuery = this.get('routeModel.query')._toObject();
+        let routeQuery = this.get('routeModel.query')._toObject();
 
         let query = {};
         for (let fieldName of Object.keys(routeQuery)) {
@@ -123,36 +151,53 @@ export default CollectionWidget.extend({
             }
         }
 
-        var property = this.get('property');
-        var considerUnfilled = this.get('considerUnfilled');
+        let property = this.get('property');
 
         if (!property) {
             return;
         }
 
-        if (this.get('routeModel.meta.'+property+'Field.isRelation')) {
-            property = property+'.title';
+        if (this.get(`routeModel.meta.${property}Field.isRelation`)) {
+            property = `${property}.title`;
         }
 
-        var promises = Ember.A();
-        promises.pushObject(this.get('store').groupBy(property, query));
+        let operator = this.get('operator');
+        let target = this.get('target');
 
+        let aggregator = {
+            property: property,
+            operator: operator,
+            target: target
+        };
+
+        let store = this.get('store');
+
+        let promises = Ember.A();
+        promises.pushObject(store.groupBy(aggregator, query));
+
+        let considerUnfilled = this.get('considerUnfilled');
         if (considerUnfilled) {
             let unfilledQuery = {};
             Ember.setProperties(unfilledQuery, query);
             unfilledQuery[property] = {'$exists': false};
-            promises.pushObject(this.get('store').count(unfilledQuery));
+            promises.pushObject(store.count(unfilledQuery));
         }
 
-        var that = this;
-        Ember.RSVP.all(promises).then(function(data) {
-            var results = data[0];
-            if (considerUnfilled) {
-                results.push({label: '_unfilled', value: data[1], selected: true});
-            }
+        Ember.RSVP.all(promises).then((data) => {
+            let results = data[0];
+            if (this.get('singleValueRepresentation')) {
+                if (results.length) {
+                    this.set('data', results[0].value);
+                }
 
-            that.set('data', results.toArray());
-            that.set('isLoading', false);
+            } else {
+
+                if (considerUnfilled) {
+                    results.push({label: '_unfilled', value: data[1], selected: true});
+                }
+                this.set('data', results.toArray());
+            }
+            this.set('isLoading', false);
         });
     }))
 

@@ -12,6 +12,16 @@
                 {{high-charts mode=_chartMode content=_chartData chartOptions=_chartOptions}}
             </div>
 
+        {{else if singleValueRepresentation}}
+
+            <p class="text-center">
+                {{#if data}}
+                    <h1>{{data}}</h1>
+                {{else}}
+                    <h1><small>no data</small></h1>
+                {{/if}}
+            </p>
+
         {{else}}
 
             <ul class="list-group">
